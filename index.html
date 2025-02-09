@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Data Editor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .actions input[type="text"] {
+            padding: 8px;
+            width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 8px 20px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: #ddd;
+            color: #333;
+        }
+
+        .add-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .save-btn {
+            background-color: #FF5722;
+            color: white;
+        }
+
+        .add-btn:hover, .save-btn:hover {
+            background-color: #ddd; /* No highlight effect on hover */
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .message {
+            display: none;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV Data Editor</h1>
+
+        <!-- Tombol Tambah Data dan Simpan -->
+        <div class="actions">
+            <input type="text" id="newData" placeholder="Masukkan data baru">
+            <button class="add-btn" onclick="addData()">Tambah Data</button>
+            <button class="save-btn" onclick="saveCSV()">Simpan Perubahan</button>
+        </div>
+
+        <!-- Tabel untuk menampilkan data CSV -->
+        <table id="csvTable">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Data</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data CSV akan ditampilkan di sini -->
+            </tbody>
+        </table>
+        
+        <!-- Notifikasi -->
+        <div class="message" id="message">Perubahan disimpan di server!</div>
+    </div>
+
+    <script>
+        let csvData = [];
+
+        // Fungsi untuk membaca CSV
+        function loadCSV() {
+            fetch('data.csv')
+                .then(response => response.text())
+                .then(data => {
+                    const rows = data.split('\n');
+                    csvData = rows.map(row => row.split(','));
+                    displayCSV();
+                });
+        }
+
+        // Fungsi untuk menampilkan data CSV ke tabel
+        function displayCSV() {
+            const tableBody = document.querySelector('#csvTable tbody');
+            tableBody.innerHTML = '';
+
+            csvData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+
+                // Menambahkan nomor urut di kolom pertama
+                const tdNumber = document.createElement('td');
+                tdNumber.textContent = index + 1; // Nomor urut dimulai dari 1
+                tr.appendChild(tdNumber);
+
+                // Mengubah data menjadi hyperlink dengan format yang diinginkan
+                row.forEach((cell, cellIndex) => {
+                    const td = document.createElement('td');
+                    if (cellIndex === 0) {
+                        const formattedUrl = `https://nopecha.com/setup#${cell}`;
+                        const a = document.createElement('a');
+                        a.href = formattedUrl;
+                        a.textContent = formattedUrl;
+                        td.appendChild(a);
+                    } else {
+                        td.textContent = cell;
+                    }
+                    tr.appendChild(td);
+                });
+
+                // Tampilkan tombol hanya untuk baris pertama
+                if (index === 0) {
+                    const tdAction = document.createElement('td');
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Hapus';
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.onclick = () => deleteRow(index);
+                    tdAction.appendChild(deleteBtn);
+
+                    const saveBtn = document.createElement('button');
+                    saveBtn.textContent = 'Simpan';
+                    saveBtn.className = 'save-btn';
+                    saveBtn.onclick = () => saveRow(index);
+                    tdAction.appendChild(saveBtn);
+
+                    tr.appendChild(tdAction);
+                }
+
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Fungsi untuk menghapus baris
+        function deleteRow(index) {
+            csvData.splice(index, 1);
+            displayCSV();
+        }
+
+        // Fungsi untuk menyimpan perubahan data ke dalam array CSV
+        function saveRow(index) {
+            const newValue = prompt('Masukkan data baru:', csvData[index][0]);
+            if (newValue) {
+                csvData[index][0] = newValue;
+                displayCSV();
+            }
+        }
+
+        // Fungsi untuk menambahkan data baru ke dalam CSV
+        function addData() {
+            const newData = document.querySelector('#newData').value;
+            if (newData) {
+                csvData.push([newData]);
+                displayCSV();
+                document.querySelector('#newData').value = ''; // Kosongkan input
+            } else {
+                alert('Masukkan data terlebih dahulu');
+            }
+        }
+
+        // Fungsi untuk menyimpan perubahan ke file CSV di server
+        function saveCSV() {
+            const csvText = csvData.map(row => row.join(',')).join('\n');
+            fetch('saveCSV.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `csvData=${encodeURIComponent(csvText)}`
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Menampilkan notifikasi bahwa perubahan disimpan
+                const message = document.getElementById('message');
+                message.style.display = 'block';
+                setTimeout(() => {
+                    message.style.display = 'none';
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Gagal menyimpan perubahan.');
+            });
+        }
+
+        // Load CSV saat halaman dimuat
+        window.onload = loadCSV;
+    </script>
+</body>
+</html>
